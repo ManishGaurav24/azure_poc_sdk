@@ -1,0 +1,7 @@
+uvicorn~=0.34.3
+fastapi~=0.115.12
+openai~=1.85.0
+python-dotenv~=1.1.0
+azure-cosmos
+azure-core~=1.34.0
+pydantic~=2.11.5
