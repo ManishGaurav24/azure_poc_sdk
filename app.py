@@ -6,12 +6,18 @@ from typing import List
 import uuid
 import datetime
 from dotenv import load_dotenv
+import os
 
 from utils.cosmos_connection import cosmos_enabled, save_message_to_cosmos, get_last_messages_from_cosmos
 from utils.llm_invoke import call_llm_async_with_retry, warm_up_search_index
 from utils.log_utils import logger
 
 load_dotenv()
+
+# Read and process allowed origins
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins_list = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
+
 
 app = FastAPI(
     title="AZURE AI CHATBOT API",
@@ -24,7 +30,7 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development; restrict in production
+    allow_origins=allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

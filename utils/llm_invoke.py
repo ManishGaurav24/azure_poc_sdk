@@ -224,3 +224,4 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
     elif last_error:
         debug_print("Raising last error after all retries")
         raise last_error
+    return None
