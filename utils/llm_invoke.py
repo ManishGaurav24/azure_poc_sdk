@@ -1,9 +1,12 @@
 import asyncio
 from openai import AzureOpenAI
 import os
+from dotenv import load_dotenv
 
 from utils.cosmos_connection import get_last_messages_from_cosmos
 from utils.log_utils import debug_print
+
+load_dotenv()
 
 endpoint = os.getenv("ENDPOINT_URL")
 deployment = os.getenv("DEPLOYMENT_NAME")
@@ -38,6 +41,7 @@ async def call_llm_async_with_retry(user_input: str, session_id: str, max_retrie
     Async call to LLM with retry logic, debug information, and Cosmos DB context
     """
     debug_print(f"User Query: {user_input}")
+    print("API VERSION: ",api_version)
 
     client = AzureOpenAI(
         azure_endpoint=endpoint,
@@ -131,7 +135,7 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
                             "filter": None,
                             "endpoint": f"{search_endpoint}",
                             "index_name": f"{index_name}",
-                            "semantic_configuration": "testsemantic",
+                            "semantic_configuration": "", # Use default semantic configuration
                             "authentication": {
                                 "type": "api_key",
                                 "key": f"{search_key}"
@@ -144,7 +148,7 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
                                     "key": subscription_key
                                 }
                             },
-                            "query_type": "semantic",
+                            "query_type": "simple",   # Use simple query for better performance
                             "in_scope": True,
                             "strictness": 1,
                             "top_n_documents": 15

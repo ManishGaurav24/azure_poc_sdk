@@ -1,9 +1,11 @@
 import datetime
 import os
+from dotenv import load_dotenv
 import uuid
 from azure.cosmos import CosmosClient
 
 from utils.log_utils import logger, debug_print
+load_dotenv()
 
 COSMOS_CONNECTION_STRING = os.getenv("COSMOS_CONNECTION_STRING")
 COSMOS_DB_NAME = os.getenv("COSMOS_DB_NAME")
