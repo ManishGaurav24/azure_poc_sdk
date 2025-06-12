@@ -3,11 +3,11 @@ import os
 import uuid
 from azure.cosmos import CosmosClient
 
-from utils.logging import logger, debug_print
+from utils.log_utils import logger, debug_print
 
 COSMOS_CONNECTION_STRING = os.getenv("COSMOS_CONNECTION_STRING")
-COSMOS_DB_NAME = os.getenv("COSMOS_DB_NAME", "chatdb")
-COSMOS_CONTAINER_NAME = os.getenv("COSMOS_CONTAINER_NAME", "messages")
+COSMOS_DB_NAME = os.getenv("COSMOS_DB_NAME")
+COSMOS_CONTAINER_NAME = os.getenv("COSMOS_CONTAINER_NAME")
 
 # Initialize Cosmos DB client
 try:
@@ -26,7 +26,6 @@ def save_message_to_cosmos(session_id: str, role: str, content: str):
     if not cosmos_enabled:
         debug_print("Cosmos DB not enabled, skipping message save")
         return
-
     try:
         item = {
             "id": str(uuid.uuid4()),
@@ -46,7 +45,6 @@ def get_last_messages_from_cosmos(session_id: str, limit: int = 5):
     if not cosmos_enabled:
         debug_print("Cosmos DB not enabled, returning empty context")
         return []
-
     try:
         query = f"""
         SELECT TOP {limit} * FROM c

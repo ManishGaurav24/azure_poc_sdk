@@ -3,14 +3,16 @@ from openai import AzureOpenAI
 import os
 
 from utils.cosmos_connection import get_last_messages_from_cosmos
-from utils.logging import debug_print
+from utils.log_utils import debug_print
 
-endpoint = os.getenv("ENDPOINT_URL", "https://hubproject00200356835591.openai.azure.com/")
-deployment = os.getenv("DEPLOYMENT_NAME", "gpt-4o-mini")
-search_endpoint = os.getenv("SEARCH_ENDPOINT", "https://testaisearch006.search.windows.net/")
-search_key = os.getenv("SEARCH_KEY", "put your Azure AI Search admin key here")
-subscription_key = os.getenv("AZURE_OPENAI_API_KEY", "REPLACE_WITH_YOUR_KEY_VALUE_HERE")
-Embedding_Endpoint = os.getenv("Embedding_Endpoint")
+endpoint = os.getenv("ENDPOINT_URL")
+deployment = os.getenv("DEPLOYMENT_NAME")
+api_version = os.getenv("API_VERSION")
+search_endpoint = os.getenv("SEARCH_ENDPOINT")
+search_key = os.getenv("SEARCH_KEY")
+subscription_key = os.getenv("AZURE_OPENAI_API_KEY")
+Embedding_Endpoint = os.getenv("EMBEDDING_ENDPOINT")
+index_name = os.getenv("INDEX_NAME")
 
 
 async def warm_up_search_index():
@@ -20,8 +22,9 @@ async def warm_up_search_index():
     try:
         debug_print("Starting search index warmup...")
         # Make a simple query to warm up the index
-        warmup_response = await call_llm_async_with_retry("What is this document about?", "warmup-session",
-                                                          max_retries=1)
+        warmup_response = await call_llm_async_with_retry("What is this document about?",
+                                                          "warmup-session",
+                                                                    max_retries=1)
         debug_print(f"Warmup response: {warmup_response}")
         debug_print("Search index warmed successfully")
         return True
@@ -39,7 +42,7 @@ async def call_llm_async_with_retry(user_input: str, session_id: str, max_retrie
     client = AzureOpenAI(
         azure_endpoint=endpoint,
         api_key=subscription_key,
-        api_version="2025-01-01-preview",
+        api_version=api_version,
     )
 
     # Enhanced prompt for better chatbot responses
@@ -127,7 +130,7 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
                         "parameters": {
                             "filter": None,
                             "endpoint": f"{search_endpoint}",
-                            "index_name": "azureblob-indexv1",
+                            "index_name": f"{index_name}",
                             "semantic_configuration": "testsemantic",
                             "authentication": {
                                 "type": "api_key",

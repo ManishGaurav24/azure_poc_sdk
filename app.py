@@ -9,16 +9,22 @@ from dotenv import load_dotenv
 
 from utils.cosmos_connection import cosmos_enabled, save_message_to_cosmos, get_last_messages_from_cosmos
 from utils.llm_invoke import call_llm_async_with_retry, warm_up_search_index
-from utils.logging import logger
+from utils.log_utils import logger
 
 load_dotenv()
 
-app = FastAPI(title="Document Assistant API", version="1.0.0")
+app = FastAPI(
+    title="AZURE AI CHATBOT API",
+    version="0.0.1",
+    description="API for Azure AI Chatbot with Cosmos DB integration",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Add your React app URLs
+    allow_origins=["*"],  # Allow all origins for development; restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -141,7 +147,12 @@ async def clear_session_history(session_id: str):
 async def warm_up_endpoint():
     try:
         success = await warm_up_search_index()
-        return {"message": "Search index warmup completed", "success": success}
+        if success:
+            logger.info("Search index warmup completed successfully")
+            return {"message": "Search index warmup completed successfully", "success": True}
+        else:
+            logger.warning("Search index warmup did not complete successfully")
+            return {"message": "Search index warmup did not complete successfully", "success": False}
     except Exception as e:
         logger.error(f"Warmup error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -155,4 +166,5 @@ async def create_new_session():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
