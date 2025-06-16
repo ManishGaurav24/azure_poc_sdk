@@ -99,7 +99,7 @@ async def chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"Chat error: {str(e)}")
         error_message = f"Error: {str(e)}"
-        save_message_to_cosmos(request.session_id, "assistant", error_message)
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="error", content=error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
 
