@@ -86,13 +86,13 @@ async def health_check():
 async def chat(request: ChatRequest):
     try:
         # Save user message to Cosmos DB
-        save_message_to_cosmos(request.session_id, "user", request.message)
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="user", content=request.message)
 
         # Get AI response
         response = await call_llm_async_with_retry(request.message, request.session_id)
 
         # Save AI response to Cosmos DB
-        save_message_to_cosmos(request.session_id, "assistant", response)
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="assistant", content=response)
 
         return ChatResponse(response=response, session_id=request.session_id)
 

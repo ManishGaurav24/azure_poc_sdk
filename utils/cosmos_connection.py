@@ -23,7 +23,7 @@ except Exception as e:
     cosmos_enabled = False
 
 
-def save_message_to_cosmos(session_id: str, role: str, content: str):
+def save_message_to_cosmos(session_id: str, user_id:str, user_roles:str, role: str, content: str):
     """Save a message to Cosmos DB"""
     if not cosmos_enabled:
         debug_print("Cosmos DB not enabled, skipping message save")
@@ -32,6 +32,8 @@ def save_message_to_cosmos(session_id: str, role: str, content: str):
         item = {
             "id": str(uuid.uuid4()),
             "sessionId": session_id,
+            "userId": user_id,
+            "userRoles": user_roles,
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "role": role,
             "content": content
