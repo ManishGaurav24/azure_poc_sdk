@@ -49,6 +49,8 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    user_id: str
+    user_roles: List[str] = []
 
 
 class ChatResponse(BaseModel):
