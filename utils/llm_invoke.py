@@ -135,7 +135,7 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
                             "filter": None,
                             "endpoint": f"{search_endpoint}",
                             "index_name": f"{index_name}",
-                            "semantic_configuration": "", # Use default semantic configuration
+                            "semantic_configuration": "pr1semantic",
                             "authentication": {
                                 "type": "api_key",
                                 "key": f"{search_key}"
@@ -148,7 +148,7 @@ Remember: You are designed to be maximally helpful. Even when perfect informatio
                                     "key": subscription_key
                                 }
                             },
-                            "query_type": "simple",   # Use simple query for better performance
+                            "query_type": "semantic",   # Use simple query for better performance
                             "in_scope": True,
                             "strictness": 1,
                             "top_n_documents": 15
