@@ -1,5 +1,7 @@
 import datetime
 import os
+from functools import partial
+
 from dotenv import load_dotenv
 import uuid
 from azure.cosmos import CosmosClient
@@ -31,8 +33,8 @@ def save_message_to_cosmos(session_id: str, user_id:str, user_roles:list[str], r
     try:
         item = {
             "id": str(uuid.uuid4()),
-            "sessionId": session_id,
-            "userId": user_id,
+            "session_id": session_id,
+            "user_id": user_id,
             "userRoles": user_roles,
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "role": role,
