@@ -7,6 +7,7 @@ import uuid
 import datetime
 from dotenv import load_dotenv
 import os
+import uvicorn
 
 from utils.cosmos_connection import cosmos_enabled, save_message_to_cosmos, get_last_messages_from_cosmos
 from utils.llm_invoke import call_llm_async_with_retry, warm_up_search_index
@@ -17,7 +18,6 @@ load_dotenv()
 # Read and process allowed origins
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*")
 allowed_origins_list = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
-
 
 app = FastAPI(
     title="AZURE AI CHATBOT API",
@@ -44,6 +44,7 @@ security = HTTPBearer()
 class ChatMessage(BaseModel):
     role: str
     content: str
+    timestamp: datetime.datetime
 
 
 class ChatRequest(BaseModel):
@@ -72,95 +73,26 @@ class MessageHistory(BaseModel):
 # API Endpoints
 @app.get("/")
 async def root():
-    return {"message": "Document Assistant API is running"}
-
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "cosmos_enabled": cosmos_enabled,
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }
-
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    try:
-        # Save user message to Cosmos DB
-        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="user", content=request.message)
-
-        # Get AI response
-        response = await call_llm_async_with_retry(request.message, request.session_id)
-
-        # Save AI response to Cosmos DB
-        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="assistant", content=response)
-
-        return ChatResponse(response=response, session_id=request.session_id)
-
-    except Exception as e:
-        logger.error(f"Chat error: {str(e)}")
-        error_message = f"Error: {str(e)}"
-        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles, role="error", content=error_message)
-        raise HTTPException(status_code=500, detail=error_message)
-
-
-@app.get("/session/{session_id}/info", response_model=SessionInfo)
-async def get_session_info(session_id: str):
-    try:
-        message_count = 0
-        if cosmos_enabled:
-            messages = get_last_messages_from_cosmos(session_id, limit=100)
-            message_count = len(messages)
-
-        return SessionInfo(
-            session_id=session_id,
-            cosmos_enabled=cosmos_enabled,
-            message_count=message_count
-        )
-    except Exception as e:
-        logger.error(f"Session info error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/session/{session_id}/history", response_model=MessageHistory)
-async def get_session_history(session_id: str, limit: int = 10):
-    try:
-        messages = []
-        if cosmos_enabled:
-            cosmos_messages = get_last_messages_from_cosmos(session_id, limit=limit)
-            messages = [
-                ChatMessage(role=msg["role"], content=msg["content"])
-                for msg in cosmos_messages
-            ]
-
-        return MessageHistory(messages=messages, session_id=session_id)
-    except Exception as e:
-        logger.error(f"Session history error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/session/{session_id}/clear")
-async def clear_session_history(session_id: str):
-    try:
-        # Note: This endpoint doesn't actually delete from Cosmos DB
-        # You might want to implement actual deletion if needed
-        return {"message": f"Session {session_id} history cleared", "success": True}
-    except Exception as e:
-        logger.error(f"Clear session error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/warm-up")
-async def warm_up_endpoint():
     try:
         success = await warm_up_search_index()
         if success:
             logger.info("Search index warmup completed successfully")
-            return {"message": "Search index warmup completed successfully", "success": True}
+            return {
+                "message": "Search index warmup completed successfully",
+                "status": "healthy",
+                "cosmos_enabled": cosmos_enabled,
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "success": True
+            }
         else:
             logger.warning("Search index warmup did not complete successfully")
-            return {"message": "Search index warmup did not complete successfully", "success": False}
+            return {
+                "message": "Search index warmup did not complete successfully",
+                "status": "healthy",
+                "cosmos_enabled": cosmos_enabled,
+                "timestamp": datetime.datetime.utcnow().isoformat(),
+                "success": False
+            }
     except Exception as e:
         logger.error(f"Warmup error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -172,7 +104,41 @@ async def create_new_session():
     return {"session_id": new_session_id}
 
 
-if __name__ == "__main__":
-    import uvicorn
+@app.get("/session/history")
+async def get_session_history(user_id: str):
+    try:
+        messages = []
+        if cosmos_enabled:
+            messages = get_last_messages_from_cosmos(user_id=user_id)
+        return messages
+    except Exception as e:
+        logger.error(f"Session history error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    try:
+        # Save user message to Cosmos DB
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles,
+                               role="user", content=request.message)
+
+        # Get AI response
+        response = await call_llm_async_with_retry(request.message, request.session_id)
+
+        # Save AI response to Cosmos DB
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles,
+                               role="assistant", content=response)
+
+        return ChatResponse(response=response, session_id=request.session_id)
+
+    except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
+        error_message = f"Error: {str(e)}"
+        save_message_to_cosmos(session_id=request.session_id, user_id=request.user_id, user_roles=request.user_roles,
+                               role="error", content=error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
+
+if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
